@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Load the configuration file
+
+if [ ! -f .config ]; then
+  echo "Config file not found."
+  exit 1
+fi
+
+source .config
+
+# ----------
+
+
+
+# Help
+
+function help() {
+  echo
+}
+
+# ----------
+
+
+
+# Subcommands
+
+function clone_repo() {
+
+}
+
+# ----------
+
+
+
+# Main cli
+
+function main() {
+  local SUBCOMMAND="$1"; shift
+
+  if [[ -z "$SUBCOMMAND" ]]; then
+    echo "No subcommand specified. Run \"./repotools help\" if you need help."
+    exit 1
+  fi
+
+  while getopts '' flag; do
+    case "$flag" in
+
+    esac
+  done
+
+  case "$SUBCOMMAND" in
+
+    "help")
+      help $@
+      exit
+      ;;
+
+    "clone-repo"
+
+
+
+  esac
+}
+
+main $@

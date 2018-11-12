@@ -13,9 +13,13 @@ source .config
 
 
 
-# Help
+# Help&usage
 
-function help() {
+function print_help() {
+  echo
+}
+
+function print_usage() {
   echo
 }
 
@@ -36,23 +40,49 @@ function clone_repo() {
 # Main cli
 
 function main() {
-  local SUBCOMMAND="$1"; shift
+  # local REPOSITORY="$1"; shift
 
-  if [[ -z "$SUBCOMMAND" ]]; then
-    echo "No subcommand specified. Run \"./repotools help\" if you need help."
-    exit 1
-  fi
+  # if [[ -z "$SUBCOMMAND" ]]; then
+  #   echo "No subcommand specified. Run \"./repotools help\" if you need help."
+  #   exit 1
+  # fi
 
-  while getopts '' flag; do
+  while getopts 'n:a:r:sSb:Bucm:' flag; do
     case "$flag" in
-
+      n)
+        # new repository
+        ;;
+      a)
+        # add a new package in the repository
+        ;;
+      r)
+        # remove the package from the repository
+        ;;
+      s)
+        # sync the repository to the remote
+        ;;
+      S)
+        # sync the repository from the remote
+        ;;
+      u)
+        # update the packages in the repository
+        ;;
+      c)
+        # do a cycle
+        ;;
+      m)
+        # create a new meta package in the repository
+        ;;
+      *)
+        print_usage
+        exit 1 ;;
     esac
   done
 
   case "$SUBCOMMAND" in
 
     "help")
-      help $@
+      print_help $@
       exit
       ;;
 

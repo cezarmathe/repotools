@@ -1,0 +1,9 @@
+arch-local-repo
+chroots-build-environment
+.pkglist
+arch-meta-packages
+repositories
+build
+config
+pkgrepo.sh
+

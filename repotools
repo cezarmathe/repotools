@@ -61,6 +61,79 @@ function initialize_build_environment() {
   fi
 }
 
+function sync_with_remote() {
+  local REPO_NAME="$1"; shift
+
+  if [[ ! -z "${REPO_NAME}" ]]; then
+    # sync a single repository
+    cd "${GLOBAL_REPO_DIR}"
+    if [[ ! -d "${REPO_NAME}" ]]; then
+      echo "Repository ${REPO_NAME} does not exist."
+    else
+      cd "${REPO_NAME}"
+
+      if [[ ! -f ".config" ]]; then
+        echo "The repository ${REPO_NAME} has no config file."
+      else
+        source ./.config
+
+        # Check local configuration to create a final address for pulling and pushing to this repository
+        local ADDRESS=""
+        if [[ ! -z "${LOCAL_REMOTE_USER}" ]]; then
+          ADDRESS="${LOCAL_REMOTE_USER}@"
+        else
+          ADDRESS="${GLOBAL_REMOTE_USER}@"
+        fi
+
+        if [[ ! -z "${LOCAL_REMOTE_ADDRESS}" ]]; then
+          ADDRESS+="${LOCAL_REMOTE_ADDRESS}"
+        else
+          ADDRESS+="${GLOBAL_REMOTE_ADDRESS}"
+        fi
+
+        if [[ ! -z "${LOCAL_REMOTE_PORT}" ]]; then
+          ADDRESS+=":${LOCAL_REMOTE_PORT}"
+        fi
+
+        if [[ -z "${LOCAL_REMOTE_ENDPOINT}" ]]; then
+          echo "The repository ${REPO_NAME} does not have a remote endpoint specified in its configuration file."
+          return
+        fi
+
+        ADDRESS+="/${LOCAL_REMOTE_ENDPOINT}"
+
+        git fetch "${ADDRESS}"
+
+        local UPSTREAM=${1:-'@{u}'}
+        local LOCAL=$(git rev-parse @)
+        local REMOTE=$(git rev-parse "$UPSTREAM")
+        local BASE=$(git merge-base @ "$UPSTREAM")
+
+        if [ $LOCAL = $REMOTE ]; then
+            echo "The repository ${REPO_NAME} is up to date."
+        elif [ $LOCAL = $BASE ]; then
+            echo "${REPO_NAME} is not up to date with the remote, pulling the changes.."
+
+            git pull "${ADDRESS}" master
+
+        elif [ $REMOTE = $BASE ]; then
+            echo "${REPO_NAME} is ahead of the remote, pushing the changes.."
+
+            git add *
+            git commit -m "$(date)"
+            git push "${ADDRESS}" master
+        else
+            echo "${REPO_NAME} and the remote are diverged."
+        fi
+      fi
+    fi
+  else
+    echo "wip"
+    # sync all repositories
+
+  fi
+}
+
 # ----------
 
 
@@ -75,7 +148,7 @@ function main() {
   #   exit 1
   # fi
 
-  while getopts 'n:a:r:sSbB:ucm:iI:' flag; do
+  while getopts 'n:a:r:sS:bB:ucm:iI:' flag; do
     case "${flag}" in
       n)
         # new repository
@@ -89,9 +162,11 @@ function main() {
         ;;
       s)
         # sync all the repositories with the remote
+        sync_with_remote
         ;;
       S)
         # sync a repository with the remote
+        sync_with_remote "${OPTARG}"
         ;;
       u)
         # update the packages in the repository

@@ -27,10 +27,38 @@ function print_usage() {
 
 
 
-# Subcommands
+# Commands
 
-function clone_repo() {
+function new_repository() {
+  local NAME="$1"; shift
 
+  cd "${GLOBAL_REPO_DIR}"
+
+  if [[ -d "${NAME}" ]]; then
+    echo "The repository already exists."
+  else
+    git clone https://github.com/cezarmathe/example_repository.git "${NAME}"
+
+    # TODO: change config file to match the repo name and other config variables
+  fi
+  
+}
+
+function initialize_build_environment() {
+  local DIR="$1"; shift
+
+  if [[ -z "${DIR}" ]]; then
+    mkdir -p "${GLOBAL_BUILD_DIR}"
+    mkarchroot -C /etc/pacman.conf "${GLOBAL_BUILD_DIR}/root" base-devel
+  else
+    if [[ "${DIR:0:1}" = "/" ]]; then
+      mkdir -p "${DIR}"
+      mkarchroot -C /etc/pacman.conf "${DIR}/root" base-devel
+    else
+      mkdir -p "${REPOTOOLS_PATH}/${DIR}"
+      mkarchroot -C /etc/pacman.conf "${REPOTOOLS_PATH}/${DIR}}/root" base-devel
+    fi
+  fi
 }
 
 # ----------
@@ -47,10 +75,11 @@ function main() {
   #   exit 1
   # fi
 
-  while getopts 'n:a:r:sSb:Bucm:' flag; do
-    case "$flag" in
+  while getopts 'n:a:r:sSbB:ucm:iI:' flag; do
+    case "${flag}" in
       n)
         # new repository
+        new_repository "${OPTARG}"
         ;;
       a)
         # add a new package in the repository
@@ -59,10 +88,10 @@ function main() {
         # remove the package from the repository
         ;;
       s)
-        # sync the repository to the remote
+        # sync all the repositories with the remote
         ;;
       S)
-        # sync the repository from the remote
+        # sync a repository with the remote
         ;;
       u)
         # update the packages in the repository
@@ -70,8 +99,22 @@ function main() {
       c)
         # do a cycle
         ;;
+      b)
+        # build all packages in a repository
+        ;;
+      B)
+        # build a package in a repository
+        ;;
       m)
         # create a new meta package in the repository
+        ;;
+      i)
+        # initialize the build environment
+        initialize_build_environment 
+        ;;
+      I)
+        # initialize the build environment in a specific directory
+        initialize_build_environment "${OPTARG}"
         ;;
       *)
         print_usage
@@ -79,18 +122,16 @@ function main() {
     esac
   done
 
-  case "$SUBCOMMAND" in
+  # case "$SUBCOMMAND" in
 
-    "help")
-      print_help $@
-      exit
-      ;;
+  #   "help")
+  #     print_help $@
+  #     exit
+  #     ;;
 
-    "clone-repo"
+  #   "clone-repo"
 
-
-
-  esac
+  # esac
 }
 
 main $@

@@ -77,32 +77,14 @@ function sync_with_remote() {
       else
         source ./.config
 
-        # Check local configuration to create a final address for pulling and pushing to this repository
-        local ADDRESS=""
-        if [[ ! -z "${LOCAL_REMOTE_USER}" ]]; then
-          ADDRESS="${LOCAL_REMOTE_USER}@"
-        else
-          ADDRESS="${GLOBAL_REMOTE_USER}@"
-        fi
-
-        if [[ ! -z "${LOCAL_REMOTE_ADDRESS}" ]]; then
-          ADDRESS+="${LOCAL_REMOTE_ADDRESS}"
-        else
-          ADDRESS+="${GLOBAL_REMOTE_ADDRESS}"
-        fi
-
-        if [[ ! -z "${LOCAL_REMOTE_PORT}" ]]; then
-          ADDRESS+=":${LOCAL_REMOTE_PORT}"
-        fi
-
-        if [[ -z "${LOCAL_REMOTE_ENDPOINT}" ]]; then
-          echo "The repository ${REPO_NAME} does not have a remote endpoint specified in its configuration file."
+        if [[ ! -z "${LOCAL_REMOTE_GIT_ADDRESS}" ]]; then
+          echo "The repository ${REPO_NAME} does not have a remote git address configured."
           return
         fi
 
-        ADDRESS+="/${LOCAL_REMOTE_ENDPOINT}"
+        git remote update
 
-        git fetch "${ADDRESS}"
+        git commit -a -m "$(date)"
 
         local UPSTREAM=${1:-'@{u}'}
         local LOCAL=$(git rev-parse @)
@@ -113,24 +95,21 @@ function sync_with_remote() {
             echo "The repository ${REPO_NAME} is up to date."
         elif [ $LOCAL = $BASE ]; then
             echo "${REPO_NAME} is not up to date with the remote, pulling the changes.."
-
-            git pull "${ADDRESS}" master
+            git pull 
 
         elif [ $REMOTE = $BASE ]; then
-            echo "${REPO_NAME} is ahead of the remote, pushing the changes.."
-
-            git add *
-            git commit -m "$(date)"
-            git push "${ADDRESS}" master
+            echo "${REPO_NAME} is ahead of the remote, pushing the changes.."            
+            git push 
         else
             echo "${REPO_NAME} and the remote are diverged."
         fi
       fi
     fi
   else
-    echo "wip"
-    # sync all repositories
-
+    echo "Syncing all repositories."
+    for reponame in "${GLOBAL_REPO_DIR}/*"; do
+      bash "${REPOTOOLS_PATH}/repotools" -S "${reponame}"
+    done 
   fi
 }
 

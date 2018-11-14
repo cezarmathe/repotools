@@ -37,7 +37,7 @@ function new_repository() {
   if [[ -d "${NAME}" ]]; then
     echo "The repository already exists."
   else
-    git clone https://github.com/cezarmathe/example_repository.git "${NAME}"
+    git clone --depth 1 https://github.com/cezarmathe/example_repository.git "${NAME}"
 
     # TODO: change config file to match the repo name and other config variables
   fi
@@ -113,6 +113,16 @@ function sync_with_remote() {
   fi
 }
 
+function build_packages() {
+  local PACKAGE_NAME="$1"; shift
+
+  if [[ ! -z "${REPO_NAME}" ]]; then
+
+  else
+
+  fi
+}
+
 # ----------
 
 
@@ -120,18 +130,14 @@ function sync_with_remote() {
 # Main cli
 
 function main() {
-  # local REPOSITORY="$1"; shift
 
-  # if [[ -z "$SUBCOMMAND" ]]; then
-  #   echo "No subcommand specified. Run \"./repotools help\" if you need help."
-  #   exit 1
-  # fi
-
-  while getopts 'n:a:r:sS:bB:ucm:iI:' flag; do
+  while getopts 'n:a:r:sSbB:ucm:iI:' flag; do
     case "${flag}" in
       n)
         # new repository
-        new_repository "${OPTARG}"
+        new_repo_flag=1
+        new_repo_name="${OPTARG}"
+        # new_repository "${OPTARG}"
         ;;
       a)
         # add a new package in the repository
@@ -141,11 +147,11 @@ function main() {
         ;;
       s)
         # sync all the repositories with the remote
-        sync_with_remote
+        sync_flag=1
         ;;
       S)
         # sync a repository with the remote
-        sync_with_remote "${OPTARG}"
+        Sync_flag=1
         ;;
       u)
         # update the packages in the repository
@@ -176,16 +182,32 @@ function main() {
     esac
   done
 
-  # case "$SUBCOMMAND" in
+  # move functions here and use a single repository name ($1)
 
-  #   "help")
-  #     print_help $@
-  #     exit
-  #     ;;
+  if [[ ! -z "${new_repo_flag}" ]]; then
+    new_repository "${new_repo_name}"
+  fi
 
-  #   "clone-repo"
+  if [[ ! -z "sync_flag" ]]; then
+    sync_with_remote
+  fi
 
-  # esac
+  # first add functions that do not depend on a repository name
+  # initialize_build_environment, sync_with_remote(for all repositories)
+  # (also cycle)
+
+  local REPO="$1"; shift
+
+  if [[ -z "${REPO}" ]]; then
+    echo "No repository name specified."
+    exit 1
+  fi
+
+  if [[ ! -z "Sync_flag" ]]; then
+    sync_with_remote "${REPO}"
+  fi
+
+  
 }
 
 main $@

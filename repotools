@@ -117,9 +117,9 @@ function build_packages() {
   local PACKAGE_NAME="$1"; shift
 
   if [[ ! -z "${REPO_NAME}" ]]; then
-
+    echo
   else
-
+    echo
   fi
 }
 
@@ -131,70 +131,99 @@ function build_packages() {
 
 function main() {
 
-  while getopts 'n:a:r:sSbB:ucm:iI:' flag; do
+  while getopts 'n:a:r:sSbB:uUcm:iI:' flag; do
     case "${flag}" in
       n)
         # new repository
-        new_repo_flag=1
-        new_repo_name="${OPTARG}"
-        # new_repository "${OPTARG}"
+        flag_new_repo=1
+        arg_new_repo="${OPTARG}"
         ;;
       a)
         # add a new package in the repository
+        flag_add=1
+        arg_add="${OPTARG}"
         ;;
       r)
         # remove the package from the repository
+        flag_remove=1
+        arg_remove="${OPTARG}"
         ;;
       s)
         # sync all the repositories with the remote
-        sync_flag=1
+        flag_sync=1
         ;;
       S)
         # sync a repository with the remote
-        Sync_flag=1
+        flag_Sync=1
         ;;
       u)
-        # update the packages in the repository
+        # update all packages in all repositories
+        flag_update=1
         ;;
+      U)
+        # update all packages in a certain repository
+        flag_Update=1
+        ;; 
       c)
         # do a cycle
+        flag_cycle=1
         ;;
       b)
         # build all packages in a repository
+        flag_build=1
         ;;
       B)
         # build a package in a repository
+        flag_build=1
+        arg_build="${OPTARG}"
         ;;
       m)
         # create a new meta package in the repository
+        flag_new_meta_pkg=1
+        arg_new_meta_pkg="${OPTARG}"
         ;;
       i)
         # initialize the build environment
-        initialize_build_environment 
+        flag_init_build_env=1
         ;;
       I)
         # initialize the build environment in a specific directory
-        initialize_build_environment "${OPTARG}"
+        flag_init_build_env=1
+        arg_init_build_env="${OPTARG}"
         ;;
       *)
         print_usage
-        exit 1 ;;
+        exit 1 
+        ;;
     esac
   done
 
-  # move functions here and use a single repository name ($1)
-
-  if [[ ! -z "${new_repo_flag}" ]]; then
-    new_repository "${new_repo_name}"
+  # flags that are completely independent
+  if [[ ! -z "${flag_new_repo}" ]]; then
+    new_repository "${flag_new_repo_arg}"
   fi
 
-  if [[ ! -z "sync_flag" ]]; then
+  if [[ ! -z "${flag_init_build_env}" ]]; then
+    initialize_build_environment "${arg_init_build_env}"
+  fi
+
+  # the cycle flag blocks other flags
+  if [[ ! -z "${flag_cycle}" ]]; then
+    # cycle
+    exit
+  fi
+
+  # flags that do not depend on a repository name
+  if [[ ! -z "${flag_sync}" ]]; then
     sync_with_remote
   fi
 
-  # first add functions that do not depend on a repository name
-  # initialize_build_environment, sync_with_remote(for all repositories)
-  # (also cycle)
+  if [[ ! -z "${flag_update}" ]]; then
+    # update_repository
+    echo
+  fi
+
+  # flags that depend on a repository name
 
   local REPO="$1"; shift
 
@@ -203,11 +232,35 @@ function main() {
     exit 1
   fi
 
-  if [[ ! -z "Sync_flag" ]]; then
+  if [[ ! -z "${flag_Sync}" ]]; then
     sync_with_remote "${REPO}"
   fi
 
-  
+  if [[ ! -z "${flag_add}" ]]; then
+    # add_add_package "${REPO}" "${arg_add}"
+    echo
+  fi
+
+  if [[ ! -z "${flag_remove}" ]]; then
+    # add_remove_package "${REPO}" "${arg_remove}"
+    echo
+  fi
+
+  if [[ ! -z "${flag_Update}" ]]; then
+    # update_repository "${REPO}"
+    echo
+  fi
+
+  if [[ ! -z "${flag_build}" ]]; then
+    # build_package "${REPO}" "${arg_build}"
+    echo
+  fi
+
+  if [[ ! -z "${flag_new_meta_pkg}" ]]; then
+    # create_new_meta_package "${REPO}" "${arg_new_meta_pkg}"
+    echo
+  fi
+
 }
 
 main $@

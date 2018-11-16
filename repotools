@@ -39,6 +39,8 @@ function new_repository() {
   else
     git clone --depth 1 https://github.com/cezarmathe/example_repository.git "${NAME}"
 
+    repo-add "${NAME}.db.tar.xz"
+
     # TODO: change config file to match the repo name and other config variables
   fi
   
@@ -113,14 +115,50 @@ function sync_with_remote() {
   fi
 }
 
-function build_packages() {
+function build_package() {
+  local REPO="$1"; shift
   local PACKAGE_NAME="$1"; shift
 
-  if [[ ! -z "${REPO_NAME}" ]]; then
-    echo
+  cd "${GLOBAL_REPO_DIR}/${REPO}"
+
+  if [[ ! -d "src" ]]; then
+    echo "The repository ${REPO} does not have packages that need to be built."
+    return
+  fi
+
+  cd "src"
+
+  if [[ ! -z "${PACKAGE_NAME}" ]]; then
+    # build a single package
+    if [[ ! -d "${PACKAGE_NAME}" ]]; then
+      echo "The repository ${REPO} does not have a buildable package named ${PACKAGE_NAME}."
+      return
+    else
+      cd "${PACKAGE_NAME}"
+      # build the package
+    fi
   else
+    # build all packages
     echo
   fi
+}
+
+function add_package() {
+  local REPO="$1"; shift
+  local PACKAGE_NAME="$1"; shift
+
+  aursync --repo "${REPO}" --root "${GLOBAL_REPO_DIR}/${REPO}" "$PACKAGE_NAME"
+}
+
+function remove_package() {
+  local REPO="$1"; shift
+  local PACKAGE_NAME="$1"; shift
+
+  cd "${GLOBAL_REPO_DIR}/${PACKAGE_NAME}"
+
+  repo-remove "${PACKAGE_NAME}.db.tar.xz" "$PACKAGE_NAME"
+
+  rm "$PKG_NAME-*.pkg.tar.xz"
 }
 
 # ----------
@@ -131,7 +169,7 @@ function build_packages() {
 
 function main() {
 
-  while getopts 'n:a:r:sSbB:uUcm:iI:' flag; do
+  while getopts 'n:a:r:sSbB:guUcm:iI:' flag; do
     case "${flag}" in
       n)
         # new repository
@@ -177,6 +215,9 @@ function main() {
         flag_build=1
         arg_build="${OPTARG}"
         ;;
+      g)
+        # build all packages in all repositories
+        flag_build_all=1
       m)
         # create a new meta package in the repository
         flag_new_meta_pkg=1
@@ -223,6 +264,10 @@ function main() {
     echo
   fi
 
+  if [[ ! -z "${flag_build_all}" ]]; then
+    build_all_packages
+  fi
+
   # flags that depend on a repository name
 
   local REPO="$1"; shift
@@ -232,17 +277,22 @@ function main() {
     exit 1
   fi
 
+  if [[ ! -d "${REPO}" ]]; then
+    echo "The repository ${REPO} does not exist."
+    exit 1
+  fi
+
   if [[ ! -z "${flag_Sync}" ]]; then
     sync_with_remote "${REPO}"
   fi
 
   if [[ ! -z "${flag_add}" ]]; then
-    # add_add_package "${REPO}" "${arg_add}"
+    add_package "${REPO}" "${arg_add}"
     echo
   fi
 
   if [[ ! -z "${flag_remove}" ]]; then
-    # add_remove_package "${REPO}" "${arg_remove}"
+    remove_package "${REPO}" "${arg_remove}"
     echo
   fi
 

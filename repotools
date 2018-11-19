@@ -25,6 +25,27 @@ function print_usage() {
 
 # ----------
 
+# Utils
+
+function source_pkg_config() {
+  if [[ -z "${flag_cfg_sourced}" ]]; then
+    return
+  fi
+
+  local REPO="$1"; shift
+
+  if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}" ]]; then
+    echo "The repository ${REPO} has no config file."
+    exit
+  fi
+
+  source "${GLOBAL_REPO_DIR}/${REPO}/.config"
+
+  flag_cfg_sourced=1
+}
+
+# ----------
+
 
 
 # Commands
@@ -74,37 +95,33 @@ function sync_with_remote() {
     else
       cd "${REPO_NAME}"
 
-      if [[ ! -f ".config" ]]; then
-        echo "The repository ${REPO_NAME} has no config file."
+      source_pkg_config "${REPO_NAME}"
+
+      if [[ ! -z "${LOCAL_REMOTE_GIT_ADDRESS}" ]]; then
+        echo "The repository ${REPO_NAME} does not have a remote git address configured."
+        return
+      fi
+
+      git remote update
+
+      git commit -a -m "$(date)"
+
+      local UPSTREAM=${1:-'@{u}'}
+      local LOCAL=$(git rev-parse @)
+      local REMOTE=$(git rev-parse "$UPSTREAM")
+      local BASE=$(git merge-base @ "$UPSTREAM")
+
+      if [ $LOCAL = $REMOTE ]; then
+        echo "The repository ${REPO_NAME} is up to date."
+      elif [ $LOCAL = $BASE ]; then
+        echo "${REPO_NAME} is not up to date with the remote, pulling the changes.."
+        git pull 
+
+      elif [ $REMOTE = $BASE ]; then
+        echo "${REPO_NAME} is ahead of the remote, pushing the changes.."            
+        git push 
       else
-        source ./.config
-
-        if [[ ! -z "${LOCAL_REMOTE_GIT_ADDRESS}" ]]; then
-          echo "The repository ${REPO_NAME} does not have a remote git address configured."
-          return
-        fi
-
-        git remote update
-
-        git commit -a -m "$(date)"
-
-        local UPSTREAM=${1:-'@{u}'}
-        local LOCAL=$(git rev-parse @)
-        local REMOTE=$(git rev-parse "$UPSTREAM")
-        local BASE=$(git merge-base @ "$UPSTREAM")
-
-        if [ $LOCAL = $REMOTE ]; then
-            echo "The repository ${REPO_NAME} is up to date."
-        elif [ $LOCAL = $BASE ]; then
-            echo "${REPO_NAME} is not up to date with the remote, pulling the changes.."
-            git pull 
-
-        elif [ $REMOTE = $BASE ]; then
-            echo "${REPO_NAME} is ahead of the remote, pushing the changes.."            
-            git push 
-        else
-            echo "${REPO_NAME} and the remote are diverged."
-        fi
+        echo "${REPO_NAME} and the remote are diverged."
       fi
     fi
   else
@@ -126,6 +143,8 @@ function build_package() {
     return
   fi
 
+  source_pkg_config "${REPO}"
+
   cd "src"
 
   if [[ ! -z "${PACKAGE_NAME}" ]]; then
@@ -135,7 +154,9 @@ function build_package() {
       return
     else
       cd "${PACKAGE_NAME}"
-      # build the package
+      makechrootpkg -cur "${GLOBAL_BUILD_DIR}"
+
+      repo-add "$LOCAL_REPO_FILE" *.pkg.tar.xz
     fi
   else
     # build all packages
@@ -265,6 +286,7 @@ function main() {
   fi
 
   if [[ ! -z "${flag_build_all}" ]]; then
+    # build all packages
     build_all_packages
   fi
 

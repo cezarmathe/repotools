@@ -34,7 +34,7 @@ function source_pkg_config() {
 
   local REPO="$1"; shift
 
-  if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}" ]]; then
+  if [[ ! -f "${GLOBAL_REPO_DIR}/${REPO}/.config" ]]; then
     echo "The repository ${REPO} has no config file."
     exit
   fi
@@ -53,14 +53,16 @@ function source_pkg_config() {
 function new_repository() {
   local NAME="$1"; shift
 
-  cd "${GLOBAL_REPO_DIR}"
-
-  if [[ -d "${NAME}" ]]; then
+  if [[ -d "${GLOBAL_REPO_DIR}/${NAME}" ]]; then
     echo "The repository already exists."
   else
-    git clone --depth 1 https://github.com/cezarmathe/example_repository.git "${NAME}"
+    git clone --depth 1 https://github.com/cezarmathe/example_repository.git "${GLOBAL_REPO_DIR}/${NAME}"
 
-    repo-add "${NAME}.db.tar.xz"
+    repo-add "${GLOBAL_REPO_DIR}/${NAME}/pkg/${NAME}.db.tar.xz"
+
+    if [[ ! -z "${arg_open_config_in_editor}" ]]; then
+      bash vim "${GLOBAL_REPO_DIR}/${NAME}/.config"
+    fi
 
     # TODO: change config file to match the repo name and other config variables
   fi
@@ -89,11 +91,9 @@ function sync_with_remote() {
 
   if [[ ! -z "${REPO_NAME}" ]]; then
     # sync a single repository
-    cd "${GLOBAL_REPO_DIR}"
-    if [[ ! -d "${REPO_NAME}" ]]; then
+    if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO_NAME}" ]]; then
       echo "Repository ${REPO_NAME} does not exist."
     else
-      cd "${REPO_NAME}"
 
       source_pkg_config "${REPO_NAME}"
 
@@ -102,24 +102,24 @@ function sync_with_remote() {
         return
       fi
 
-      git remote update
+      git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git"  remote update
 
-      git commit -a -m "$(date)"
+      git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git" commit -a -m "$(date)"
 
       local UPSTREAM=${1:-'@{u}'}
-      local LOCAL=$(git rev-parse @)
-      local REMOTE=$(git rev-parse "$UPSTREAM")
-      local BASE=$(git merge-base @ "$UPSTREAM")
+      local LOCAL=$(git --work-tree=${GLOBAL_REPO_DIR}/${REPO_NAME}/ --git-dir=${GLOBAL_REPO_DIR}/${REPO_NAME}/.git rev-parse @)
+      local REMOTE=$(git --work-tree=${GLOBAL_REPO_DIR}/${REPO_NAME}/ --git-dir=${GLOBAL_REPO_DIR}/${REPO_NAME}/.git rev-parse "$UPSTREAM")
+      local BASE=$(git --work-tree=${GLOBAL_REPO_DIR}/${REPO_NAME}/ --git-dir=${GLOBAL_REPO_DIR}/${REPO_NAME}/.git merge-base @ "$UPSTREAM")
 
       if [ $LOCAL = $REMOTE ]; then
         echo "The repository ${REPO_NAME} is up to date."
       elif [ $LOCAL = $BASE ]; then
         echo "${REPO_NAME} is not up to date with the remote, pulling the changes.."
-        git pull 
+        git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git" pull 
 
       elif [ $REMOTE = $BASE ]; then
         echo "${REPO_NAME} is ahead of the remote, pushing the changes.."            
-        git push 
+        git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git" push 
       else
         echo "${REPO_NAME} and the remote are diverged."
       fi
@@ -136,27 +136,27 @@ function build_package() {
   local REPO="$1"; shift
   local PACKAGE_NAME="$1"; shift
 
-  cd "${GLOBAL_REPO_DIR}/${REPO}"
-
-  if [[ ! -d "src" ]]; then
+  if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}/src" ]]; then
     echo "The repository ${REPO} does not have packages that need to be built."
     return
   fi
 
   source_pkg_config "${REPO}"
 
-  cd "src"
-
   if [[ ! -z "${PACKAGE_NAME}" ]]; then
     # build a single package
-    if [[ ! -d "${PACKAGE_NAME}" ]]; then
+    if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}/src/${PACKAGE_NAME}" ]]; then
       echo "The repository ${REPO} does not have a buildable package named ${PACKAGE_NAME}."
       return
     else
-      cd "${PACKAGE_NAME}"
+      local previous_wd="$(pwd)"
+
+      cd "${GLOBAL_REPO_DIR}/${REPO}/src/${PACKAGE_NAME}"
       makechrootpkg -cur "${GLOBAL_BUILD_DIR}"
 
-      repo-add "$LOCAL_REPO_FILE" *.pkg.tar.xz
+      cd "${previous_wd}"
+
+      repo-add "${GLOBAL_REPO_DIR}/${REPO}/$LOCAL_DB_FILE" *.pkg.tar.xz
     fi
   else
     # build all packages
@@ -175,11 +175,13 @@ function remove_package() {
   local REPO="$1"; shift
   local PACKAGE_NAME="$1"; shift
 
-  cd "${GLOBAL_REPO_DIR}/${PACKAGE_NAME}"
+  source_pkg_config "${REPO}"
 
-  repo-remove "${PACKAGE_NAME}.db.tar.xz" "$PACKAGE_NAME"
+  cd "${GLOBAL_REPO_DIR}/${REPO}"
 
-  rm "$PKG_NAME-*.pkg.tar.xz"
+  repo-remove "${GLOBAL_REPO_DIR}/${REPO}/${LOCAL_DB_FILE}" "$PACKAGE_NAME"
+
+  rm "${GLOBAL_REPO_DIR}/${REPO}/pkg/$PKG_NAME-*.pkg.tar.xz"
 }
 
 # ----------
@@ -196,6 +198,12 @@ function main() {
         # new repository
         flag_new_repo=1
         arg_new_repo="${OPTARG}"
+        ;;
+      N)
+        # new repository which opens the config file in the editor
+        flag_new_repo=1
+        arg_new_repo="${OPTARG}"
+        arg_open_config_in_editor=1
         ;;
       a)
         # add a new package in the repository
@@ -239,6 +247,7 @@ function main() {
       g)
         # build all packages in all repositories
         flag_build_all=1
+        ;;
       m)
         # create a new meta package in the repository
         flag_new_meta_pkg=1
@@ -262,7 +271,7 @@ function main() {
 
   # flags that are completely independent
   if [[ ! -z "${flag_new_repo}" ]]; then
-    new_repository "${flag_new_repo_arg}"
+    new_repository "${arg_new_repo}"
   fi
 
   if [[ ! -z "${flag_init_build_env}" ]]; then

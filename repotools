@@ -28,9 +28,6 @@ function print_usage() {
 # Utils
 
 function source_pkg_config() {
-  if [[ -z "${flag_cfg_sourced}" ]]; then
-    return
-  fi
 
   local REPO="$1"; shift
 
@@ -41,7 +38,11 @@ function source_pkg_config() {
 
   source "${GLOBAL_REPO_DIR}/${REPO}/.config"
 
-  flag_cfg_sourced=1
+  echo "${LOCAL_DB_FILE}"
+}
+
+function remove_tmp_files() {
+  rm "${REPOTOOLS_PATH}"/*.tmp
 }
 
 # ----------
@@ -61,7 +62,7 @@ function new_repository() {
     repo-add "${GLOBAL_REPO_DIR}/${NAME}/pkg/${NAME}.db.tar.xz"
 
     if [[ ! -z "${arg_open_config_in_editor}" ]]; then
-      bash vim "${GLOBAL_REPO_DIR}/${NAME}/.config"
+      vim "${GLOBAL_REPO_DIR}/${NAME}/.config"
     fi
 
     # TODO: change config file to match the repo name and other config variables
@@ -154,13 +155,19 @@ function build_package() {
       cd "${GLOBAL_REPO_DIR}/${REPO}/src/${PACKAGE_NAME}"
       makechrootpkg -cur "${GLOBAL_BUILD_DIR}"
 
-      cd "${previous_wd}"
+      repo-add "${GLOBAL_REPO_DIR}/${REPO}/${LOCAL_DB_FILE}" *.pkg.tar.xz
 
-      repo-add "${GLOBAL_REPO_DIR}/${REPO}/$LOCAL_DB_FILE" *.pkg.tar.xz
+      cd "${previous_wd}"
     fi
   else
-    # build all packages
-    echo
+
+    echo "$(ls ${GLOBAL_REPO_DIR}/${REPO}/src)" > "packages.tmp"
+
+    trap remove_tmp_files EXIT
+
+    while read -r line; do
+      bash "${REPOTOOLS_PATH}/repotools" -B "${line}" "${REPO}"
+    done < "packages.tmp"
   fi
 }
 
@@ -184,6 +191,16 @@ function remove_package() {
   rm "${GLOBAL_REPO_DIR}/${REPO}/pkg/$PKG_NAME-*.pkg.tar.xz"
 }
 
+function build_all_packages() {
+  echo "$(ls ${GLOBAL_REPO_DIR})" > "repositories.tmp"
+
+  # trap remove_tmp_files EXIT
+
+  while read -r line; do
+    bash "${REPOTOOLS_PATH}/repotools" -b "${line}"
+  done < "repositories.tmp"
+}
+
 # ----------
 
 
@@ -192,76 +209,76 @@ function remove_package() {
 
 function main() {
 
-  while getopts 'n:a:r:sSbB:guUcm:iI:' flag; do
+  while getopts 'N:n:a:r:sSbB:guUcm:iI:' flag; do
     case "${flag}" in
       n)
         # new repository
         flag_new_repo=1
         arg_new_repo="${OPTARG}"
-        ;;
+        shift 2;;
       N)
         # new repository which opens the config file in the editor
         flag_new_repo=1
         arg_new_repo="${OPTARG}"
         arg_open_config_in_editor=1
-        ;;
+        shift 2;;
       a)
         # add a new package in the repository
         flag_add=1
         arg_add="${OPTARG}"
-        ;;
+        shift 2;;
       r)
         # remove the package from the repository
         flag_remove=1
         arg_remove="${OPTARG}"
-        ;;
+        shift 2;;
       s)
         # sync all the repositories with the remote
         flag_sync=1
-        ;;
+        shift;;
       S)
         # sync a repository with the remote
         flag_Sync=1
-        ;;
+        shift;;
       u)
         # update all packages in all repositories
         flag_update=1
-        ;;
+        shift;;
       U)
         # update all packages in a certain repository
         flag_Update=1
-        ;; 
+        shift;; 
       c)
         # do a cycle
         flag_cycle=1
-        ;;
+        shift;;
       b)
         # build all packages in a repository
         flag_build=1
-        ;;
+        shift;;
       B)
         # build a package in a repository
         flag_build=1
         arg_build="${OPTARG}"
-        ;;
+        shift 2;;
       g)
         # build all packages in all repositories
         flag_build_all=1
-        ;;
+        shift;;
       m)
         # create a new meta package in the repository
         flag_new_meta_pkg=1
         arg_new_meta_pkg="${OPTARG}"
-        ;;
+        shift 2;;
       i)
         # initialize the build environment
         flag_init_build_env=1
-        ;;
+        shift;;
       I)
         # initialize the build environment in a specific directory
         flag_init_build_env=1
         arg_init_build_env="${OPTARG}"
-        ;;
+        shift 2;;
       *)
         print_usage
         exit 1 
@@ -295,7 +312,6 @@ function main() {
   fi
 
   if [[ ! -z "${flag_build_all}" ]]; then
-    # build all packages
     build_all_packages
   fi
 
@@ -308,7 +324,7 @@ function main() {
     exit 1
   fi
 
-  if [[ ! -d "${REPO}" ]]; then
+  if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}" ]]; then
     echo "The repository ${REPO} does not exist."
     exit 1
   fi
@@ -319,12 +335,10 @@ function main() {
 
   if [[ ! -z "${flag_add}" ]]; then
     add_package "${REPO}" "${arg_add}"
-    echo
   fi
 
   if [[ ! -z "${flag_remove}" ]]; then
     remove_package "${REPO}" "${arg_remove}"
-    echo
   fi
 
   if [[ ! -z "${flag_Update}" ]]; then
@@ -333,8 +347,7 @@ function main() {
   fi
 
   if [[ ! -z "${flag_build}" ]]; then
-    # build_package "${REPO}" "${arg_build}"
-    echo
+    build_package "${REPO}" "${arg_build}"
   fi
 
   if [[ ! -z "${flag_new_meta_pkg}" ]]; then

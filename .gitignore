@@ -1,9 +1,20 @@
-arch-local-repo
-chroots-build-environment
-.pkglist
-arch-meta-packages
-repositories
+# Dolphin file manager
+.directory
+
+# Old files
+.old
+
+# Build environment
 build
-config
-pkgrepo.sh
+
+# Repositories
+repositories
+
+
+
+
+
+
+
+
 

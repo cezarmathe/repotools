@@ -1,220 +1,22 @@
 #!/bin/bash
 
-# Load the configuration file
 
-if [ ! -f .config ]; then
-  echo "Config file not found."
+# Load the script files
+
+if [[ ! -d "script_files" ]]; then
+  echo "The folder with the script files could not be found."
   exit 1
 fi
 
-source .config
+script_files=("script_files/.config" "script_files/add_remove_packages.sh" "script_files/build_environment.sh" "script_files/build_packages.sh" "script_files/help_usage.sh" "script_files/new_meta_package.sh" "script_files/new_repository.sh" "script_files/pacman_entries.sh" "script_files/sync_repositories.sh" "script_files/update_repositories.sh" "script_files/utils.sh")
 
-# ----------
-
-
-
-# Help&usage
-
-function print_help() {
-  echo
-}
-
-function print_usage() {
-  echo
-}
-
-# ----------
-
-# Utils
-
-function source_pkg_config() {
-
-  local REPO="$1"; shift
-
-  if [[ ! -f "${GLOBAL_REPO_DIR}/${REPO}/.config" ]]; then
-    echo "The repository ${REPO} has no config file."
-    exit
+for item in ${script_files[*]}; do
+  if [ ! -f "${item}" ]; then
+    echo "${item} file not found."
+    exit 1
   fi
-
-  source "${GLOBAL_REPO_DIR}/${REPO}/.config"
-
-  echo "${LOCAL_DB_FILE}"
-}
-
-function remove_tmp_files() {
-  rm "${REPOTOOLS_PATH}"/*.tmp
-}
-
-# ----------
-
-
-
-# Commands
-
-function new_repository() {
-  local NAME="$1"; shift
-
-  if [[ -d "${GLOBAL_REPO_DIR}/${NAME}" ]]; then
-    echo "The repository already exists."
-  else
-    git clone --depth 1 https://github.com/cezarmathe/example_repository.git "${GLOBAL_REPO_DIR}/${NAME}"
-
-    if [[ ! -z "${arg_open_config_in_editor}" ]]; then
-      vim "${GLOBAL_REPO_DIR}/${NAME}/.config"
-    fi
-
-    repo-add "${GLOBAL_REPO_DIR}/${NAME}/pkg/${NAME}.db.tar.xz"
-
-    # TODO: change config file to match the repo name and other config variables
-  fi
-  
-}
-
-function initialize_build_environment() {
-  local DIR="$1"; shift
-
-  if [[ -z "${DIR}" ]]; then
-    mkdir -p "${GLOBAL_BUILD_DIR}"
-    mkarchroot -C /etc/pacman.conf "${GLOBAL_BUILD_DIR}/root" base-devel
-  else
-    if [[ "${DIR:0:1}" = "/" ]]; then
-      mkdir -p "${DIR}"
-      mkarchroot -C /etc/pacman.conf "${DIR}/root" base-devel
-    else
-      mkdir -p "${REPOTOOLS_PATH}/${DIR}"
-      mkarchroot -C /etc/pacman.conf "${REPOTOOLS_PATH}/${DIR}}/root" base-devel
-    fi
-  fi
-}
-
-function sync_with_remote() {
-  local REPO_NAME="$1"; shift
-
-  if [[ ! -z "${REPO_NAME}" ]]; then
-    # sync a single repository
-    if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO_NAME}" ]]; then
-      echo "Repository ${REPO_NAME} does not exist."
-    else
-
-      source_pkg_config "${REPO_NAME}"
-
-      if [[ ! -z "${LOCAL_REMOTE_GIT_ADDRESS}" ]]; then
-        echo "The repository ${REPO_NAME} does not have a remote git address configured."
-        return
-      fi
-
-      git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git"  remote update
-
-      git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git" commit -a -m "$(date)"
-
-      local UPSTREAM=${1:-'@{u}'}
-      local LOCAL=$(git --work-tree=${GLOBAL_REPO_DIR}/${REPO_NAME}/ --git-dir=${GLOBAL_REPO_DIR}/${REPO_NAME}/.git rev-parse @)
-      local REMOTE=$(git --work-tree=${GLOBAL_REPO_DIR}/${REPO_NAME}/ --git-dir=${GLOBAL_REPO_DIR}/${REPO_NAME}/.git rev-parse "$UPSTREAM")
-      local BASE=$(git --work-tree=${GLOBAL_REPO_DIR}/${REPO_NAME}/ --git-dir=${GLOBAL_REPO_DIR}/${REPO_NAME}/.git merge-base @ "$UPSTREAM")
-
-      if [ $LOCAL = $REMOTE ]; then
-        echo "The repository ${REPO_NAME} is up to date."
-      elif [ $LOCAL = $BASE ]; then
-        echo "${REPO_NAME} is not up to date with the remote, pulling the changes.."
-        git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git" pull "${LOCAL_REMOTE_REPO_ADDRESS}" master
-
-      elif [ $REMOTE = $BASE ]; then
-        echo "${REPO_NAME} is ahead of the remote, pushing the changes.."            
-        git --work-tree="${GLOBAL_REPO_DIR}/${REPO_NAME}/" --git-dir="${GLOBAL_REPO_DIR}/${REPO_NAME}/.git" push "${LOCAL_REMOTE_REPO_ADDRESS}" master
-      else
-        echo "${REPO_NAME} and the remote are diverged."
-      fi
-    fi
-  else
-    echo "Syncing all repositories."
-    for reponame in "${GLOBAL_REPO_DIR}/*"; do
-      bash "${REPOTOOLS_PATH}/repotools" -S "${reponame}"
-    done 
-  fi
-}
-
-function build_package() {
-  local REPO="$1"; shift
-  local PACKAGE_NAME="$1"; shift
-
-  if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}/src" ]]; then
-    echo "The repository ${REPO} does not have packages that need to be built."
-    return
-  fi
-
-  source_pkg_config "${REPO}"
-
-  if [[ ! -z "${PACKAGE_NAME}" ]]; then
-    # build a single package
-    if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}/src/${PACKAGE_NAME}" ]]; then
-      echo "The repository ${REPO} does not have a buildable package named ${PACKAGE_NAME}."
-      return
-    else
-      local previous_wd="$(pwd)"
-
-      cd "${GLOBAL_REPO_DIR}/${REPO}/src/${PACKAGE_NAME}"
-      makechrootpkg -cur "${GLOBAL_BUILD_DIR}"
-
-      repo-add "${GLOBAL_REPO_DIR}/${REPO}/${LOCAL_DB_FILE}" *.pkg.tar.xz
-
-      cd "${previous_wd}"
-    fi
-  else
-
-    echo "$(ls ${GLOBAL_REPO_DIR}/${REPO}/src)" > "packages.tmp"
-
-    while read -r line; do
-      bash "${REPOTOOLS_PATH}/repotools" -B "${line}" "${REPO}"
-    done < "packages.tmp"
-  fi
-}
-
-function add_package() {
-  local REPO="$1"; shift
-  local PACKAGE_NAME="$1"; shift
-
-  aursync --repo "${REPO}" --root "${GLOBAL_REPO_DIR}/${REPO}/pkg" "$PACKAGE_NAME"
-}
-
-function remove_package() {
-  local REPO="$1"; shift
-  local PACKAGE_NAME="$1"; shift
-
-  source_pkg_config "${REPO}"
-
-  cd "${GLOBAL_REPO_DIR}/${REPO}"
-
-  repo-remove "${GLOBAL_REPO_DIR}/${REPO}/${LOCAL_DB_FILE}" "$PACKAGE_NAME"
-
-  rm "${GLOBAL_REPO_DIR}/${REPO}/pkg/$PKG_NAME-*.pkg.tar.xz"
-}
-
-function build_all_packages() {
-  echo "$(ls ${GLOBAL_REPO_DIR})" > "repositories.tmp" 
-
-  while read -r line; do
-    bash "${REPOTOOLS_PATH}/repotools" -b "${line}"
-  done < "repositories.tmp"
-}
-
-function update_repository() {
-  local REPO="$1"; shift
-
-  if [[ ! -z "${REPO}" ]]; then
-    # update a single repository
-    source_pkg_config "${REPO}"
-
-    aursync --repo "$NAME" --root "$GLOBAL_REPO_DIR/$REPO/pkg" -u
-  else
-    # update all repositories
-    echo "$(ls ${GLOBAL_REPO_DIR})" > "repositories.tmp" 
-
-    while read -r line; do
-      bash "${REPOTOOLS_PATH}/repotools" -U "${line}"
-    done < "repositories.tmp"
-
-  fi
-}
+  source "${item}"
+done
 
 # ----------
 
@@ -224,12 +26,12 @@ function update_repository() {
 
 function main() {
 
-  # Add new package: -a <package_name> <repo_name>
+  # Add new package: -a <package_name> <repo_name> 
   # Build all packages from all repositories: -d
   # Build packages: -b <repo_name>; -B <package_name> <repo_name>
   # Cycle: -c
   # Generate pacman entry: -g; -G <repo_name>
-  # Help&usage: -h
+  # Help&usage: -h 
   # Initialize build environment: -i; -I <directory>
   # New meta package: -m: <package_name> <repo_name>
   # New repository: -n <repo_name>; -N <repo_name>
@@ -314,7 +116,7 @@ function main() {
     esac
   done
 
-  trap remove_tmp_files EXIT
+  # trap remove_tmp_files EXIT
 
   # flags that are completely independent
   if [[ ! -z "${flag_new_repo}" ]]; then
@@ -337,7 +139,7 @@ function main() {
   fi
 
   if [[ ! -z "${flag_update}" ]]; then
-    # update_repository
+    update_repository
     echo
   fi
 
@@ -372,8 +174,7 @@ function main() {
   fi
 
   if [[ ! -z "${flag_Update}" ]]; then
-    # update_repository "${REPO}"
-    echo
+    update_repository "${REPO}"
   fi
 
   if [[ ! -z "${flag_build}" ]]; then

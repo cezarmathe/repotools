@@ -1,19 +1,20 @@
 # Functions for updating repositories
 
 function update_repository() {
-  local REPO="$1"; shift
+  local REPOSITORY_NAME="$1"; shift
 
-  if [[ ! -z "${REPO}" ]]; then
+  if [[ ! -z "${REPOSITORY_NAME}" ]]; then
     # update a single repository
-    source_pkg_config "${REPO}"
+    source_pkg_config "${REPOSITORY_NAME}"
 
-    aursync --repo "$NAME" --root "$GLOBAL_REPO_DIR/$REPO/pkg" -u
+    aursync --repo "$NAME" --root "$PATH_REPOSITORIES/$REPOSITORY_NAME/pkg" -u
   else
     # update all repositories
-    echo "$(ls ${GLOBAL_REPO_DIR})" > "repositories.tmp" 
+    echo "$(ls ${PATH_REPOSITORIES})" > "repositories.tmp" 
 
+    # todo: use mktemp
     while read -r line; do
-      bash "${REPOTOOLS_PATH}/repotools" -U "${line}"
+      bash "${PATH_REPOTOOLS}/repotools" -U "${line}"
     done < "repositories.tmp"
 
   fi

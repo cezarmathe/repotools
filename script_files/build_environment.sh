@@ -1,18 +1,18 @@
 # Functions for interacting with the build environment
 
 function initialize_build_environment() {
-  local DIR="$1"; shift
+  local DIRECTORY="$1"; shift
 
-  if [[ -z "${DIR}" ]]; then
-    mkdir -p "${GLOBAL_BUILD_DIR}"
-    mkarchroot -C /etc/pacman.conf "${GLOBAL_BUILD_DIR}/root" base-devel
+  if [[ -z "${DIRECTORY}" ]]; then
+    mkdir -p "${PATH_BUILD}"
+    mkarchroot -C /etc/pacman.conf "${PATH_BUILD}/root" base-devel
   else
-    if [[ "${DIR:0:1}" = "/" ]]; then
-      mkdir -p "${DIR}"
-      mkarchroot -C /etc/pacman.conf "${DIR}/root" base-devel
+    if [[ "${DIRECTORY:0:1}" = "/" ]]; then
+      mkdir -p "${DIRECTORY}"
+      mkarchroot -C /etc/pacman.conf "${DIRECTORY}/root" base-devel
     else
-      mkdir -p "${REPOTOOLS_PATH}/${DIR}"
-      mkarchroot -C /etc/pacman.conf "${REPOTOOLS_PATH}/${DIR}}/root" base-devel
+      mkdir -p "${PATH_REPOTOOLS}/${DIRECTORY}"
+      mkarchroot -C /etc/pacman.conf "${PATH_REPOTOOLS}/${DIRECTORY}}/root" base-devel
     fi
   fi
 }

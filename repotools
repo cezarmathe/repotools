@@ -26,93 +26,111 @@ done
 
 function main() {
 
-  # Add new package: -a <package_name> <repo_name> 
-  # Build all packages from all repositories: -d
-  # Build packages: -b <repo_name>; -B <package_name> <repo_name>
-  # Cycle: -c
-  # Generate pacman entry: -g; -G <repo_name>
-  # Help&usage: -h 
-  # Initialize build environment: -i; -I <directory>
-  # New meta package: -m: <package_name> <repo_name>
-  # New repository: -n <repo_name>; -N <repo_name>
-  # Remove package: -r <package_name> <repo_name>
-  # Sync repositories: -s; -S <repo_name>
-  # Update repositories: -u; -U <repo_name>
-
   while getopts 'N:n:a:r:sSbB:guUcm:iI:' flag; do
     case "${flag}" in
+
+      A)
+        # Add a new package: -A <package_name> <repo_name> 
+        flag_add=1
+        arg_add="${OPTARG}"
+        shift 2;;
+
+      d)
+        # Build all packages within all repositories: -d
+        flag_build_all=1
+        shift;
+
+      b)
+        # Build all packages within a single repository: -b <repo_name>
+        flag_build=1
+        shift;;
+
+      B)
+        # Build a package: -B <package_name> <repo_name>
+        flag_build=1
+        arg_build="${OPTARG}"
+        shift 2;;
+
+      c)
+        # Cycle: -c
+        flag_cycle=1
+        shift;;
+
+      g)
+        # Generate a pacman entry for all repositories: -g
+        flag_generate_pacman_entry=1
+        shift;
+
+      G)
+        # Generate a pacman entry for a single repository: -G <repo_name>
+        flag_Generate_pacman_entry=1
+        shift;
+
+      h)
+        # Help&usage: -h 
+        print_help
+        exit
+        
+      i)
+        # Initialize the build environment in the default directory: -i
+        flag_init_build_env=1
+        shift;;
+
+      I)
+        # Initialize the build environment in a specific directory: -I <directory>
+        flag_init_build_env=1
+        arg_init_build_env="${OPTARG}"
+        shift 2;;
+
+      M)
+        # Create a new meta package: -M <package_name> <repo_name>
+        flag_new_meta_pkg=1
+        arg_new_meta_pkg="${OPTARG}"
+        shift 2;;
+
       n)
-        # new repository
+        # Create a new repository: -n <repo_name>
         flag_new_repo=1
         arg_new_repo="${OPTARG}"
         shift 2;;
       N)
-        # new repository which opens the config file in the editor
+        # Create a new repository and open its config in vim: -N <repo_name>
         flag_new_repo=1
         arg_new_repo="${OPTARG}"
         arg_open_config_in_editor=1
         shift 2;;
-      a)
-        # add a new package in the repository
-        flag_add=1
-        arg_add="${OPTARG}"
-        shift 2;;
-      r)
-        # remove the package from the repository
+      
+      R)
+        # Remove a package: -R <package_name> <repo_name>
         flag_remove=1
         arg_remove="${OPTARG}"
         shift 2;;
+
       s)
-        # sync all the repositories with the remote
+        # Sync all repositories: -s
         flag_sync=1
         shift;;
+
       S)
-        # sync a repository with the remote
+        # Sync a single repository: -S <repo_name>
         flag_Sync=1
         shift;;
+
       u)
-        # update all packages in all repositories
+        # Update all repositories: -u
         flag_update=1
         shift;;
+
       U)
-        # update all packages in a certain repository
+        # Update a single repository: -U <repo_name>
         flag_Update=1
         shift;; 
-      c)
-        # do a cycle
-        flag_cycle=1
-        shift;;
-      b)
-        # build all packages in a repository
-        flag_build=1
-        shift;;
-      B)
-        # build a package in a repository
-        flag_build=1
-        arg_build="${OPTARG}"
-        shift 2;;
-      g)
-        # build all packages in all repositories
-        flag_build_all=1
-        shift;;
-      m)
-        # create a new meta package in the repository
-        flag_new_meta_pkg=1
-        arg_new_meta_pkg="${OPTARG}"
-        shift 2;;
-      i)
-        # initialize the build environment
-        flag_init_build_env=1
-        shift;;
-      I)
-        # initialize the build environment in a specific directory
-        flag_init_build_env=1
-        arg_init_build_env="${OPTARG}"
-        shift 2;;
+      
       *)
         print_usage
         exit 1 
         ;;
+
     esac
   done
 

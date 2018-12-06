@@ -26,7 +26,7 @@ done
 
 function main() {
 
-  while getopts 'N:n:a:r:sSbB:guUcm:iI:' flag; do
+  while getopts 'NnA:R:sSbB:guUcM:iI:' flag; do
     case "${flag}" in
 
       A)
@@ -89,15 +89,13 @@ function main() {
         shift 2;;
 
       n)
-        # Create a new repository: -n <repo_name>
+        # Create a new repository for meta packages: -n <repo_name>
         flag_new_repo=1
-        arg_new_repo="${OPTARG}"
         shift 2;;
       N)
-        # Create a new repository and open its config in vim: -N <repo_name>
+        # Create a new repository for regular packages: -N <repo_name>
         flag_new_repo=1
-        arg_new_repo="${OPTARG}"
-        arg_open_config_in_editor=1
+        arg_new_repo=1
         shift 2;;
       
       R)
@@ -136,74 +134,92 @@ function main() {
 
   # trap remove_tmp_files EXIT
 
-  # flags that are completely independent
-  if [[ ! -z "${flag_new_repo}" ]]; then
-    new_repository "${arg_new_repo}"
-  fi
-
+  # Flags that are completely independent
   if [[ ! -z "${flag_init_build_env}" ]]; then
     initialize_build_environment "${arg_init_build_env}"
   fi
+  # ----------
 
-  # the cycle flag blocks other flags
+  # The cycle flag blocks other flags
   if [[ ! -z "${flag_cycle}" ]]; then
     # cycle
     exit
   fi
+  # ----------
 
-  # flags that do not depend on a repository name
+  # Flags that do not depend on a repository name
   if [[ ! -z "${flag_sync}" ]]; then
+    # sync all repositories
     sync_with_remote
   fi
 
   if [[ ! -z "${flag_update}" ]]; then
+    # update all repositories
     update_repository
-    echo
   fi
 
   if [[ ! -z "${flag_build_all}" ]]; then
+    # build all packages in all repositories
     build_all_packages
   fi
+  # ----------
 
-  # flags that depend on a repository name
+  # Flags that depend on a repository name
+  local repository_name="$1"; shift
 
-  local REPO="$1"; shift
-
-  if [[ -z "${REPO}" ]]; then
+  # checking whether a repository name was specified
+  if [[ -z "${repository_name}" ]]; then
     echo "No repository name specified."
     exit 1
   fi
 
-  if [[ ! -d "${GLOBAL_REPO_DIR}/${REPO}" ]]; then
-    echo "The repository ${REPO} does not exist."
+  # the new repository command is executed before anything else that requires a valid repository
+  if [[ ! -z "${flag_new_repo}" ]]; then
+    # create a new repository
+    # ${arg_new_repo} specifies whether the created repository will be a 
+    # meta package repository or a regular package repository
+    new_repository "${repository_name}" "${arg_new_repo}"
+  fi
+
+  # checking whether the specified repository exists or not
+  if [[ ! -d "${GLOBAL_REPO_DIR}/${repository_name}" ]]; then
+    echo "The repository ${repository_name} does not exist."
     exit 1
   fi
 
   if [[ ! -z "${flag_Sync}" ]]; then
-    sync_with_remote "${REPO}"
+    # sync a single repository
+    sync_with_remote "${repository_name}"
   fi
 
   if [[ ! -z "${flag_add}" ]]; then
-    add_package "${REPO}" "${arg_add}"
+    # add a package in a repository
+    add_package "${repository_name}" "${arg_add}"
   fi
 
   if [[ ! -z "${flag_remove}" ]]; then
-    remove_package "${REPO}" "${arg_remove}"
+    # remove a package in a repository
+    remove_package "${repository_name}" "${arg_remove}"
   fi
 
   if [[ ! -z "${flag_Update}" ]]; then
-    update_repository "${REPO}"
+    # update packages within a repository
+    update_repository "${repository_name}"
   fi
 
   if [[ ! -z "${flag_build}" ]]; then
-    build_package "${REPO}" "${arg_build}"
+    # build a package/packages within a repository
+    build_package "${repository_name}" "${arg_build}"
   fi
 
   if [[ ! -z "${flag_new_meta_pkg}" ]]; then
-    # create_new_meta_package "${REPO}" "${arg_new_meta_pkg}"
+    # create a new meta package in a repository
+    # create_new_meta_package "${repository_name}" "${arg_new_meta_pkg}"
     echo
   fi
 
+  # todo: add the generate pacman entry option
+  # ----------
 }
 
 main $@

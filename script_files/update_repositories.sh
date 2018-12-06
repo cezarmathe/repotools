@@ -1,13 +1,13 @@
 # Functions for updating repositories
 
 function update_repository() {
-  local REPOSITORY_NAME="$1"; shift
+  local repository_name="$1"; shift
 
-  if [[ ! -z "${REPOSITORY_NAME}" ]]; then
+  if [[ ! -z "${repository_name}" ]]; then
     # update a single repository
-    source_pkg_config "${REPOSITORY_NAME}"
+    source_pkg_config "${repository_name}"
 
-    aursync --repo "$NAME" --root "$PATH_REPOSITORIES/$REPOSITORY_NAME/pkg" -u
+    aursync --repo "$NAME" --root "$PATH_REPOSITORIES/$repository_name/pkg" -u
   else
     # update all repositories
     echo "$(ls ${PATH_REPOSITORIES})" > "repositories.tmp" 

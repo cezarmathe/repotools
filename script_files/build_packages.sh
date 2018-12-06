@@ -5,41 +5,40 @@
 # Calling this function with no parameters
 # build all packages within repository
 function build_package() {
-  local REPOSITORY_NAME="$1"; shift
-  local PACKAGE_NAME="$1"; shift
+  local repository_name="$1"; shift
+  local package_name="$1"; shift
 
-  if [[ ! -d "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/src" ]]; then
-    echo "The repository ${REPOSITORY_NAME} does not have packages that need to be built."
+  if [[ ! -d "${PATH_REPOSITORIES}/${repository_name}/src" ]]; then
+    echo "The repository ${repository_name} does not have packages that need to be built."
     return
   fi
 
-  source_pkg_config "${REPOSITORY_NAME}"
+  source_pkg_config "${repository_name}"
 
-  if [[ ! -z "${PACKAGE_NAME}" ]]; then
+  if [[ ! -z "${package_name}" ]]; then
     # build a single package within a repository
-    if [[ ! -d "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/src/${PACKAGE_NAME}" ]]; then
-      echo "The repository ${REPOSITORY_NAME} does not have a buildable package named ${PACKAGE_NAME}."
+    if [[ ! -d "${PATH_REPOSITORIES}/${repository_name}/src/${package_name}" ]]; then
+      echo "The repository ${repository_name} does not have a buildable package named ${package_name}."
       return
     else
       local previous_wd="$(pwd)"
 
-      cd "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/src/${PACKAGE_NAME}"
+      cd "${PATH_REPOSITORIES}/${repository_name}/src/${package_name}"
       makechrootpkg -cur "${GLOBAL_BUILD_DIR}"
 
-      repo-add "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/${LOCAL_DB_FILE}" *.pkg.tar.xz
+      repo-add "${PATH_REPOSITORIES}/${repository_name}/${LOCAL_DB_FILE}" *.pkg.tar.xz
 
-      cp *.pkg.tar.xz "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/${LOCAL_DB_FILE}/"
+      cp *.pkg.tar.xz "${PATH_REPOSITORIES}/${repository_name}/${LOCAL_DB_FILE}/"
 
       cd "${previous_wd}"
     fi
   else
     # build all packages within a repository
-    # todo: mktmp instead of manual temp file
-    echo "$(ls ${PATH_REPOSITORIES}/${REPOSITORY_NAME}/src)" > "packages.tmp"
+    echo "$(ls ${PATH_REPOSITORIES}/${repository_name}/src)" > "packages.tmp"
 
-    while read -r line; do
-      bash "${REPOTOOLS_PATH}/repotools" -B "${line}" "${REPOSITORY_NAME}"
-    done < "packages.tmp"
+    for packagename in "${PATH_REPOSITORIES}/${repository_name}/src/*"; do
+      bash "${PATH_REPOTOOLS}/repotools" -B "${packagename}"
+    done 
   fi
 }
 
@@ -47,7 +46,7 @@ function build_package() {
 function build_all_packages() {
   echo "$(ls ${PATH_REPOSITORIES})" > "repositories.tmp" 
 
-  while read -r line; do
-    bash "${REPOTOOLS_PATH}/repotools" -b "${line}"
-  done < "repositories.tmp"
+  for reponame in "${PATH_REPOSITORIES}/*"; do
+      bash "${PATH_REPOTOOLS}/repotools" -b "${reponame}"
+  done 
 }

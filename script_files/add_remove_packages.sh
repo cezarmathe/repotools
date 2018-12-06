@@ -2,22 +2,22 @@
 
 # Add a package to the specified repository
 function add_package() {
-  local REPOSITORY_NAME="$1"; shift
-  local PACKAGE_NAME="$1"; shift
+  local repository_name="$1"; shift
+  local package_name="$1"; shift
 
-  aursync --repo "${REPOSITORY_NAME}" --root "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/pkg" "${PACKAGE_NAME}"
+  aursync --repo "${repository_name}" --root "${PATH_REPOSITORIES}/${repository_name}/pkg" "${package_name}"
 }
 
 # Remove a package from the specified repository
 function remove_package() {
-  local REPOSITORY_NAME="$1"; shift
-  local PACKAGE_NAME="$1"; shift
+  local repository_name="$1"; shift
+  local package_name="$1"; shift
 
-  source_pkg_config "${REPOSITORY_NAME}"
+  source_pkg_config "${repository_name}"
 
-  cd "${PATH_REPOSITORIES}/${REPOSITORY_NAME}"
+  cd "${PATH_REPOSITORIES}/${repository_name}"
 
-  repo-remove "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/${LOCAL_DB_FILE}" "${PACKAGE_NAME}"
+  repo-remove "${PATH_REPOSITORIES}/${repository_name}/${LOCAL_DB_FILE}" "${package_name}"
 
-  rm "${PATH_REPOSITORIES}/${REPOSITORY_NAME}/pkg/${PACKAGE_NAME}-*.pkg.tar.xz"
+  rm "${PATH_REPOSITORIES}/${repository_name}/pkg/${package_name}-*.pkg.tar.xz"
 }

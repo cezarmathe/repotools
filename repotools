@@ -162,6 +162,10 @@ function main() {
     # build all packages in all repositories
     build_all_packages
   fi
+
+  if [[ ! -z "${flag_generate_pacman_entry}" ]]; then
+    generate_pacman_entry
+  fi
   # ----------
 
   # Flags that depend on a repository name
@@ -194,7 +198,7 @@ function main() {
 
   # initialize git if a repository was created
   if [[ ! -z "${flag_new_repo}" ]]; then
-    new_repository_git "${repository_name}"
+    new_repository_init "${repository_name}"
   fi
 
   if [[ ! -z "${flag_Sync}" ]]; then
@@ -228,7 +232,9 @@ function main() {
     echo
   fi
 
-  # todo: add the generate pacman entry option
+  if [[ ! -z "${flag_Generate_pacman_entry}" ]]; then
+    generate_pacman_entry "${repository_name}"
+  fi
   # ----------
 }
 

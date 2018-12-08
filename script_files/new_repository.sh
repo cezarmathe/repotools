@@ -31,16 +31,20 @@ function new_repository() {
     echo "LOCAL_REMOTE_REPO_ADDRESS=\"insert url here\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
 # EOF 
     
+    # edit the config file
     vim "${PATH_REPOSITORIES}/${repository_name}/.config"
 
+    # create the gitignore file
     vim "${PATH_REPOSITORIES}/${repository_name}/.gitignore"
 
   fi
 }
 
-# Initialize git for the new repository
-function new_repository_git() {
+# Initialize the new repository
+function new_repository_init() {
   local repository_name="$1"; shift
+
+  bash "${PATH_REPOTOOLS}/repotools" -G "${repository_name}" > "${PATH_REPOSITORIES}/${repository_name}/pacman-entry.txt"
 
   local previous_wd="$(pwd)"
 

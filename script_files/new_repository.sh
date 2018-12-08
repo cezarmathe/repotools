@@ -54,7 +54,7 @@ function new_repository_git() {
 
   git remote add origin "${LOCAL_REMOTE_REPO_ADDRESS}" 
 
-  git push origin master
+  git push --set-upstream origin master
 
   cd "${previous_wd}"
 }

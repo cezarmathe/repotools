@@ -6,7 +6,7 @@ function source_pkg_config() {
 
   if [[ ! -f "${PATH_REPOSITORIES}/${repository_name}/.config" ]]; then
     echo "The repository ${repository_name} has no config file."
-    exit
+    exit 1
   fi
 
   source "${PATH_REPOSITORIES}/${repository_name}/.config"

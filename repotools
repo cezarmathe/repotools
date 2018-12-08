@@ -38,7 +38,7 @@ function main() {
       d)
         # Build all packages within all repositories: -d
         flag_build_all=1
-        shift;
+        shift;;
 
       b)
         # Build all packages within a single repository: -b <repo_name>
@@ -59,17 +59,18 @@ function main() {
       g)
         # Generate a pacman entry for all repositories: -g
         flag_generate_pacman_entry=1
-        shift;
+        shift;;
 
       G)
         # Generate a pacman entry for a single repository: -G <repo_name>
         flag_Generate_pacman_entry=1
-        shift;
+        shift;;
 
       h)
         # Help&usage: -h 
         print_help
         exit
+        ;;
         
       i)
         # Initialize the build environment in the default directory: -i
@@ -91,12 +92,12 @@ function main() {
       n)
         # Create a new repository for meta packages: -n <repo_name>
         flag_new_repo=1
-        shift 2;;
+        shift ;;
       N)
         # Create a new repository for regular packages: -N <repo_name>
         flag_new_repo=1
         arg_new_repo=1
-        shift 2;;
+        shift ;;
       
       R)
         # Remove a package: -R <package_name> <repo_name>
@@ -178,13 +179,23 @@ function main() {
     # create a new repository
     # ${arg_new_repo} specifies whether the created repository will be a 
     # meta package repository or a regular package repository
-    new_repository "${repository_name}" "${arg_new_repo}"
+    # new_repository "${repository_name}" "${arg_new_repo}"
+    new_repository "${repository_name}"
   fi
 
   # checking whether the specified repository exists or not
-  if [[ ! -d "${GLOBAL_REPO_DIR}/${repository_name}" ]]; then
+  if [[ ! -d "${PATH_REPOSITORIES}/${repository_name}" ]]; then
     echo "The repository ${repository_name} does not exist."
     exit 1
+  fi
+
+  # source the repository config before other commands so it needs to be
+  # called only once
+  source_pkg_config "${repository_name}"
+
+  # initialize git if a repository was created
+  if [[ ! -z "${flag_new_repo}" ]]; then
+    new_repository_git "${repository_name}"
   fi
 
   if [[ ! -z "${flag_Sync}" ]]; then

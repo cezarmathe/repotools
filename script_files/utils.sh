@@ -2,18 +2,16 @@
 
 function source_pkg_config() {
 
-  local REPOSITORY_NAME="$1"; shift
+  local repository_name="$1"; shift
 
-  if [[ ! -f "${GLOBAL_REPO_DIR}/${REPOSITORY_NAME}/.config" ]]; then
-    echo "The repository ${REPOSITORY_NAME} has no config file."
+  if [[ ! -f "${PATH_REPOSITORIES}/${repository_name}/.config" ]]; then
+    echo "The repository ${repository_name} has no config file."
     exit
   fi
 
-  source "${GLOBAL_REPO_DIR}/${REPOSITORY_NAME}/.config"
-
-  # echo "${LOCAL_DB_FILE}"
+  source "${GLOBAL_REPO_DIR}/${repository_name}/.config"
 }
 
 function remove_tmp_files() {
-  rm "${REPOTOOLS_PATH}"/*.tmp
+  rm "${PATH_REPOSITORIES}"/*.tmp
 }

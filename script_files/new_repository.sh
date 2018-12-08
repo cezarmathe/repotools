@@ -1,5 +1,6 @@
 # Functions for creating a new repository
 
+# Create a new repository
 function new_repository() {
   local repository_name="$1"; shift
 
@@ -21,19 +22,38 @@ function new_repository() {
     # create the config file
     touch "${PATH_REPOSITORIES}/${repository_name}/.config"
     
-    echo "# Configuration file for the repository\n"
-    echo "LOCAL_REPOSITORY_NAME=${repository_name}"
-
-    cat > "${PATH_REPOSITORIES}/${repository_name}/.config" <<EOF
-
-      LOCAL_REMOTE_PACKAGE_DIR="insert url here"
-
-      LOCAL_DB_FILE="pkg/$NAME.db.tar.xz"
-
-      LOCAL_REMOTE_REPO_ADDRESS="insert url here"
-    EOF 
+    echo "# Configuration file for the repository" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
+    echo
+    echo "LOCAL_REPOSITORY_NAME=\"${repository_name}\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
+    echo "LOCAL_REMOTE_PACKAGE_DIR=\"insert url here\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
+    echo "LOCAL_DB_FILE=\"pkg/$NAME.db.tar.xz\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
+    echo "LOCAL_REMOTE_REPO_ADDRESS=\"insert url here\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
+# EOF 
     
     vim "${PATH_REPOSITORIES}/${repository_name}/.config"
 
+    vim "${PATH_REPOSITORIES}/${repository_name}/.gitignore"
+
   fi
+}
+
+# Initialize git for the new repository
+function new_repository_git() {
+  local repository_name="$1"; shift
+
+  local previous_wd="$(pwd)"
+
+  cd "${REPOSITORIES_PATH}/${repository_name}"
+
+  git init
+  git add .
+  git add .config
+  git add .gitignore
+  git commit -m "Initial config"
+
+  git remote add origin "${LOCAL_REMOTE_REPO_ADDRESS}" 
+
+  git push origin master
+
+  cd "${previous_wd}"
 }

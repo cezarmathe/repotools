@@ -25,8 +25,7 @@ done
 # Main cli
 
 function main() {
-
-  while getopts 'NnA:R:sSbB:guUcM:iI:' flag; do
+  while getopts 'AbB:cdgGhiI:M:nNR:sSuU' flag; do
     case "${flag}" in
 
       A)
@@ -34,11 +33,6 @@ function main() {
         flag_add=1
         arg_add="${OPTARG}"
         shift 2;;
-
-      d)
-        # Build all packages within all repositories: -d
-        flag_build_all=1
-        shift;;
 
       b)
         # Build all packages within a single repository: -b <repo_name>
@@ -54,6 +48,11 @@ function main() {
       c)
         # Cycle: -c
         flag_cycle=1
+        shift;;
+
+      d)
+        # Build all packages within all repositories: -d
+        flag_build_all=1
         shift;;
 
       g)

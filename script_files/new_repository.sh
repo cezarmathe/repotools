@@ -17,6 +17,7 @@ function new_repository() {
     # create a folder for meta packages if required
     if [[ -z "${arg_new_repo}" ]]; then
       mkdir "${PATH_REPOSITORIES}/${repository_name}/src"
+      echo "placeholder file" > "${PATH_REPOSITORIES}/${repository_name}/src/.placeholder"
     fi
 
     # create the config file
@@ -26,7 +27,7 @@ function new_repository() {
     echo
     echo "LOCAL_REPOSITORY_NAME=\"${repository_name}\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
     echo "LOCAL_REMOTE_PACKAGE_DIR=\"insert url here\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
-    echo "LOCAL_DB_FILE=\"pkg/$NAME.db.tar.xz\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
+    echo "LOCAL_DB_FILE=\"pkg/${repository_name}.db.tar.xz\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
     echo "LOCAL_REMOTE_REPO_ADDRESS=\"insert url here\"" >> "${PATH_REPOSITORIES}/${repository_name}/.config"
 # EOF 
     
@@ -43,7 +44,7 @@ function new_repository_git() {
 
   local previous_wd="$(pwd)"
 
-  cd "${REPOSITORIES_PATH}/${repository_name}"
+  cd "${PATH_REPOSITORIES}/${repository_name}"
 
   git init
   git add .

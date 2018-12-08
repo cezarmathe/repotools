@@ -5,17 +5,11 @@ function update_repository() {
 
   if [[ ! -z "${repository_name}" ]]; then
     # update a single repository
-    source_pkg_config "${repository_name}"
-
-    aursync --repo "$NAME" --root "$PATH_REPOSITORIES/$repository_name/pkg" -u
+    aursync --repo "$LOCAL_REPOSITORY_NAME" --root "$PATH_REPOSITORIES/${repository_name}/pkg" -u
   else
     # update all repositories
-    echo "$(ls ${PATH_REPOSITORIES})" > "repositories.tmp" 
-
-    # todo: use mktemp
-    while read -r line; do
-      bash "${PATH_REPOTOOLS}/repotools" -U "${line}"
-    done < "repositories.tmp"
-
+    for reponame in "${PATH_REPOSITORIES}/*"; do
+      bash "${PATH_REPOTOOLS}/repotools" -U "$(basename ${reponame})"
+    done
   fi
 }

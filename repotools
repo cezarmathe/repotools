@@ -8,7 +8,7 @@ if [[ ! -d "script_files" ]]; then
   exit 1
 fi
 
-script_files=("script_files/.config" "script_files/add_remove_packages.sh" "script_files/build_environment.sh" "script_files/build_packages.sh" "script_files/help_usage.sh" "script_files/new_meta_package.sh" "script_files/new_repository.sh" "script_files/pacman_entries.sh" "script_files/sync_repositories.sh" "script_files/update_repositories.sh" "script_files/utils.sh")
+script_files=("script_files/.config" "script_files/add_remove_packages.sh" "script_files/build_environment.sh" "script_files/build_packages.sh" "script_files/cycle.sh" "script_files/help_usage.sh" "script_files/new_meta_package.sh" "script_files/new_repository.sh" "script_files/pacman_entries.sh" "script_files/sync_repositories.sh" "script_files/update_repositories.sh" "script_files/utils.sh")
 
 for item in ${script_files[*]}; do
   if [ ! -f "${item}" ]; then
@@ -25,7 +25,7 @@ done
 # Main cli
 
 function main() {
-  while getopts 'AbB:cdgGhiI:M:nNR:sSuU' flag; do
+  while getopts 'A:bB:cdgGhiI:M:nNR:sSuU' flag; do
     case "${flag}" in
 
       A)
@@ -142,7 +142,7 @@ function main() {
 
   # The cycle flag blocks other flags
   if [[ ! -z "${flag_cycle}" ]]; then
-    # cycle
+    cycle
     exit
   fi
   # ----------

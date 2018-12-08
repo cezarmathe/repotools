@@ -11,8 +11,10 @@ function sync_with_remote() {
       return
     fi
 
-    git --work-tree="${PATH_REPOSITORIES}/${repository_name}/" --git-dir="${PATH_REPOSITORIES}/${repository_name}/.git"  remote update
+    git --work-tree="${PATH_REPOSITORIES}/${repository_name}/" --git-dir="${PATH_REPOSITORIES}/${repository_name}/.git" remote update
 
+    git --work-tree="${PATH_REPOSITORIES}/${repository_name}/" --git-dir="${PATH_REPOSITORIES}/${repository_name}/.git" add .
+    
     git --work-tree="${PATH_REPOSITORIES}/${repository_name}/" --git-dir="${PATH_REPOSITORIES}/${repository_name}/.git" commit -a -m "$(date)"
 
     local upstream=${1:-'@{u}'}

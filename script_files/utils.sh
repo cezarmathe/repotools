@@ -9,7 +9,7 @@ function source_pkg_config() {
     exit
   fi
 
-  source "${GLOBAL_REPO_DIR}/${repository_name}/.config"
+  source "${PATH_REPOSITORIES}/${repository_name}/.config"
 }
 
 function remove_tmp_files() {

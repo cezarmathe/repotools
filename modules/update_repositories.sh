@@ -9,7 +9,7 @@ function update_repository() {
   else
     # update all repositories
     for reponame in "${PATH_REPOSITORIES}/*"; do
-      bash "${PATH_REPOTOOLS}/repotools" -U "$(basename ${reponame})"
+      bash repotools -U "$(basename ${reponame})"
     done
   fi
 }

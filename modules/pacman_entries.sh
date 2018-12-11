@@ -12,7 +12,7 @@ function generate_pacman_entry() {
   else
     # generate the entry for all packages
     for reponame in "${PATH_REPOSITORIES}/*"; do
-      bash "${PATH_REPOTOOLS}/repotools" -G "$(basename ${reponame})"
+      bash repotools -G "$(basename ${reponame})"
     done 
   fi
 }

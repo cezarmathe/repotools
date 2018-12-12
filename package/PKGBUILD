@@ -61,5 +61,5 @@ package() {
     install -Dm 644 "${srcdir}/${script_file}" "${pkgdir}/usr/lib/${pkgname}/${script_file}"
   done
 
-  install -Dm644 "${srcdir}/repotools.conf" "${pkgdir}/usr/share/repotools/${pkgname}.conf"
+  install -Dm644 "${srcdir}/repotools.conf" "${pkgdir}/etc/${pkgname}.conf"
 }

@@ -35,7 +35,7 @@ function build_package() {
     echo "Building all packages from ${repository_name}.."
 
     for packagename in "${PATH_REPOSITORIES}/${repository_name}/src/*"; do
-      bash "${PATH_REPOTOOLS}/repotools" -B "$(basename ${packagename}) ${repository_name}"
+      bash repotools -B "$(basename ${packagename}) ${repository_name}"
     done 
   fi
 }
@@ -45,6 +45,6 @@ function build_all_packages() {
   echo "Building all packages from all repositories.." 
 
   for reponame in "${PATH_REPOSITORIES}/*"; do
-      bash "${PATH_REPOTOOLS}/repotools" -b "$(basename ${reponame})"
+      bash repotools -b "$(basename ${reponame})"
   done 
 }

@@ -37,7 +37,7 @@ function sync_with_remote() {
     # sync all repositories
     echo "Syncing all repositories."
     for reponame in "${PATH_REPOSITORIES}/*"; do
-      bash "${PATH_REPOTOOLS}/repotools" -S "$(basename ${reponame})"
+      bash repotools -S "$(basename ${reponame})"
     done
   fi
 }

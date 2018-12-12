@@ -11,8 +11,7 @@ function initialize_build_environment() {
       mkdir -p "${directory}"
       mkarchroot -C /etc/pacman.conf "${directory}/root" base-devel
     else
-      mkdir -p "${PATH_REPOTOOLS}/${directory}"
-      mkarchroot -C /etc/pacman.conf "${PATH_REPOTOOLS}/${directory}}/root" base-devel
+      echo "Path is invalid"
     fi
   fi
 }

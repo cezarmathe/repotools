@@ -1,21 +1,37 @@
 #!/bin/bash
+# Author: Cezar Mathe <cezarmathe@gmail.com> https://github.com/cezarmathe/repotools
 
-
-# Load the script files
-
-if [[ ! -d "script_files" ]]; then
-  echo "The folder with the script files could not be found."
-  exit 1
+# Load the configuration
+if [[ -f "${XDG_CONFIG_HOME}/repotools.conf" ]]; then
+  source "${XDG_CONFIG_HOME}/repotools.conf"  
+elif [[ -f "${HOME}/.config/repotools.conf" ]]; then
+  source "${HOME}/.config/repotools.conf"
+elif [[ -f "/etc/repotools.conf" ]]; then
+  source "/etc/repotools.conf"
+else
+  echo "No configuration file could be found."
 fi
 
-script_files=("script_files/.config" "script_files/add_remove_packages.sh" "script_files/build_environment.sh" "script_files/build_packages.sh" "script_files/cycle.sh" "script_files/help_usage.sh" "script_files/new_meta_package.sh" "script_files/new_repository.sh" "script_files/pacman_entries.sh" "script_files/sync_repositories.sh" "script_files/update_repositories.sh" "script_files/utils.sh")
+script_modules_base_path="/usr/lib/repotools"
+
+script_files=("add_remove_packages.sh" 
+              "build_environment.sh" 
+              "build_packages.sh" 
+              "cycle.sh" 
+              "help_usage.sh" 
+              "new_meta_package.sh" 
+              "new_repository.sh" 
+              "pacman_entries.sh" 
+              "sync_repositories.sh" 
+              "update_repositories.sh" 
+              "utils.sh")
 
 for item in ${script_files[*]}; do
-  if [ ! -f "${item}" ]; then
+  if [ ! -f "${script_modules_base_path}/${item}" ]; then
     echo "${item} file not found."
     exit 1
   fi
-  source "${item}"
+  source "${script_modules_base_path}/${item}"
 done
 
 # ----------

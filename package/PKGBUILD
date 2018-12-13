@@ -1,6 +1,6 @@
 # Maintainer: Cezar Mathe <cezarmathe@gmail.com>
 pkgname=repotools
-pkgver=0.1
+pkgver=0.1.1
 pkgrel=3
 pkgdesc="Utility for creating and maintaining custom user repositories."
 arch=(x86_64)
@@ -8,12 +8,14 @@ url="https://github.com/cezarmathe/repotools"
 license=('MIT')
 depends=('git' 'aurutils')
 backup=('etc/repotools.conf')
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/cezarmathe/repotools/archive/v${pkgver}-${pkgrel}.tar.gz")
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/cezarmathe/repotools/archive/v${pkgver}.tar.gz")
 sha256sums=('SKIP')
 validpgpkeys=('61C1AF95BB594AD40DEEB7103F8F89E56422CBA8')
 
 package() {
 	
+  tar -xvf "${pkgname}-${pkgver}.tar.gz"
+
   cd "${pkgname}-${pkgver}"
 
   install -Dm755 "repotools" "${pkgdir}/usr/bin/repotools"

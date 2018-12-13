@@ -1,21 +1,31 @@
 #!/bin/bash
 
-cp -f package/PKGBUILD ${HOME}/Packages/repotools/PKGBUILD
+file_list=("LICENSE"
+          "repotools"
+          "repotools.conf"
+          "modules/add_remove_packages.sh"
+          "modules/build_environment.sh "
+          "modules/build_packages.sh"
+          "modules/cycle.sh"
+          "modules/help_usage.sh "
+          "modules/new_meta_package.sh "
+          "modules/new_repository.sh"
+          "modules/pacman_entries.sh "
+          "modules/sync_repositories.sh "
+          "modules/update_repositories.sh "
+          "modules/utils.sh")
 
-cp -f repotools ${HOME}/Packages/repotools/repotools
+# Source the PKGBUILD for variables
+source package/PKGBUILD
 
-cp -f repotools.conf ${HOME}/Packages/repotools/repotools.conf
+# Move the PKGBUILD and .SRCINFO
+# cp -f package/PKGBUILD ${HOME}/Packages/repotools/PKGBUILD
+# makepkg --printsrcinfo > ${HOME}/Packages/repotools/.SRCINFO
 
-cp -f LICENSE ${HOME}/Packages/repotools/LICENSE
+for file in ${file_list[@]}; do
+  echo ${file} >> file_list.txt
+done
 
-cp -rf modules/*.sh ${HOME}/Packages/repotools/
+tar -czf "tar/v${pkgver}" -T file_list.txt
 
-cd ${HOME}/Packages/repotools
-
-makepkg --printsrcinfo > .SRCINFO
-
-git add -A
-
-git commit -a
-
-git push origin master
+rm file_list.txt
